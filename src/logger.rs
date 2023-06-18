@@ -31,27 +31,33 @@ impl Logger {
         };
     }
 
-    pub fn log(&mut self, message: &str, logtype: &str) -> Result<(), LoggerError> {
+    pub fn log(&mut self, message: &str, logtype: &str) {
         match logtype {
             "info" => {
                 self.stdout
                     .write(utils::format_info(message).as_bytes())
                     .expect("Error in format info log");
-                Ok(())
             }
             "error" => {
-                self.stdout.write(utils::format_error(&"").as_bytes());
-                panic!("{}", utils::format_error(message));
+                self.stdout
+                    .write(utils::format_error(message).as_bytes())
+                    .expect("Error in format info log");
             }
             "warning" => {
                 self.stdout
                     .write(utils::format_warning(message).as_bytes())
                     .expect("Error in format warning log");
-                Ok(())
             }
-            &_ => Err(LoggerError::new(
-                "The type specified at the log level does not exist",
-            )),
+            "warning" => {
+                self.stdout
+                    .write(utils::format_logs(message).as_bytes())
+                    .expect("Error in format warning log");
+            }
+            &_ => {
+                self.stdout
+                    .write(utils::format_error("The type log is not specified").as_bytes())
+                    .expect("Error in format info log");
+            }
         }
     }
 }

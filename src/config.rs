@@ -1,7 +1,10 @@
 use crate::error::{ConfigError, LoggerError};
 use crate::job::Job;
+use crate::logger::Logger;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
+use tokio::process::Command;
+use tokio::task;
 
 fn clear_values(name: &mut Vec<u8>, id: &mut Vec<u8>, run: &mut Vec<u8>) {
     name.clear();
@@ -15,24 +18,31 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn add(&mut self, name: Vec<u8>, id: Vec<u8>, run: Vec<u8>) -> bool {
-        let job: Job = Job { name, id, run };
+    pub async fn add(&mut self, name: Vec<u8>, id: Vec<u8>, run: Vec<u8>) -> bool {
+        let job: Job = Job {
+            name,
+            id,
+            run,
+            status: crate::job::Status::NoStatus,
+        };
         self.jobs.push(job);
         true
     }
 
     // Process based on ASCII table : search value by octet
-    pub async fn get_jobs_by_config(&mut self) -> Result<(), ConfigError> {
+    pub async fn get_jobs_by_config(&mut self, logger: &mut Logger) -> Result<(), ConfigError> {
         let mut f = match File::open("workflow.yaml").await {
             Ok(f) => {
-                print!("File has been read");
+                logger.log(&format!("{}", "Config File has been read"), "info");
                 f
             }
             Err(err) => return Err(ConfigError::FileNotFoundError(err)),
         };
         let mut buffer: Vec<u8> = Vec::new();
         match f.read_to_end(&mut buffer).await {
-            Ok(_) => println!("Buffer has been set."),
+            Ok(_) => {
+                logger.log(&format!("{}", "Buffer has been set"), "info");
+            }
             Err(err) => println!("{}", err),
         }
         // Index of property
@@ -44,11 +54,11 @@ impl Config {
         while i < buffer.len() {
             // New job
             if buffer[i] == 0x2D && buffer[i + 1] == 0x20 {
-                if name.is_empty() || id.is_empty() || run.is_empty() {
-                    return Err(ConfigError::ConfigMissingProperty(self.jobs.len() - 1));
-                }
+                // if name.is_empty() || id.is_empty() || run.is_empty() {
+                //     return Err(ConfigError::ConfigMissingProperty(self.jobs.len() - 1));
+                // }
                 if i != 0 {
-                    self.add(name.clone(), id.clone(), run.clone());
+                    self.add(name.clone(), id.clone(), run.clone()).await;
                     clear_values(&mut name, &mut id, &mut run);
                 }
                 i += 2;
@@ -92,7 +102,7 @@ impl Config {
             }
             // Push last job
             if i == (buffer.len() - 1) {
-                self.add(name.clone(), id.clone(), run.clone());
+                self.add(name.clone(), id.clone(), run.clone()).await;
             }
             i += 1;
         }
