@@ -13,6 +13,10 @@ pub fn format_info(message: &str) -> String {
     format!("\x1b[94m[INFO]\x1b[0m : {}\n", message)
 }
 
+pub fn format_success(message: &str) -> String {
+    format!("\x1b[92m[SUCCESS]\x1b[0m : {}\n", message)
+}
+
 pub fn format_warning(message: &str) -> String {
     format!("\x1b[93m[WARNING]\x1b[0m : {}\n", message)
 }

@@ -1,7 +1,6 @@
 - name: 1
   id: 1
-  run: "echo Hello World"
-
+  run: touch test.txt
 - name: 2
   id: 2
-  run: "echo Hello World2"
+  run: echo Hello World >> test.txt
