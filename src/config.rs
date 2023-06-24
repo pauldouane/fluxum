@@ -1,9 +1,11 @@
+use std::sync::Arc;
 use crate::error::{ConfigError, LoggerError};
 use crate::job::Job;
 use crate::logger::Logger;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;
+use tokio::sync::Mutex;
 use tokio::task;
 
 fn clear_values(name: &mut Vec<u8>, id: &mut Vec<u8>, run: &mut Vec<u8>) {
@@ -30,7 +32,8 @@ impl Config {
     }
 
     // Process based on ASCII table : search value by octet
-    pub async fn get_jobs_by_config(&mut self, logger: &mut Logger) -> Result<(), ConfigError> {
+    pub async fn get_jobs_by_config(&mut self, logger: Arc<Mutex<Logger>>) -> Result<(), ConfigError> {
+        let mut logger = logger.lock().await;
         let mut f = match File::open("workflow.yaml").await {
             Ok(f) => {
                 logger.log(&format!("{}", "Config File has been read"), "info");

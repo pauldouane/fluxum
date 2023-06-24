@@ -1,9 +1,13 @@
+use std::fmt::format;
 use std::process::Stdio;
 use std::str::from_utf8;
+use std::sync::Arc;
 use std::thread::JoinHandle;
 
 use job::{Job, Status};
 use tokio::process::Command;
+use tokio::runtime::Runtime;
+use tokio::sync::Mutex;
 use tokio::task;
 
 use crate::config::Config;
@@ -19,27 +23,21 @@ mod utils;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let mut logger = Logger::new();
+    let mut logger_mutex = Arc::new(Mutex::new(Logger::new())); // Create an Arc<Mutex<Logger>> for sharing the logger
     let mut config = Config { jobs: vec![] };
-    match config.get_jobs_by_config(&mut logger).await {
-        Ok(_) => {
-            logger.log(&format!("Number of jobs : {}", config.jobs.len()), "info");
-            for mut job in config.jobs {
-                job.status = Status::Running;
-                let handle = tokio::spawn(async move {
-                    let output = Command::new("ls").output().await.unwrap();
-                    output.stdout
-                });
+    let mut handles = vec![];
+    config.get_jobs_by_config(logger_mutex.clone()).await.expect("Unable to get jobs");
+    for mut job in config.jobs {
+        let logger = Arc::clone(&logger_mutex); // Clone the Arc to increase reference count
+        let handle = tokio::spawn(async move {
+            job.execute(logger).await.expect("TODO: panic message");
+        });
+        handles.push(handle);
+    }
 
-                let out = handle.await.unwrap();
-                println!("{:?}", std::str::from_utf8(&out))
-            }
-            Ok(())
-        }
-        Err(err) => {
-            logger.log(&format!("{}", err), "error");
-            Err(err)
-        }
-    };
+    for handle in handles {
+        let _ = handle.await;
+    }
+
     Ok(())
 }

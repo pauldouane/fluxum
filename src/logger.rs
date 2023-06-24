@@ -48,14 +48,14 @@ impl Logger {
                     .write(utils::format_warning(message).as_bytes())
                     .expect("Error in format warning log");
             }
-            "warning" => {
+            "trace" => {
                 self.stdout
-                    .write(utils::format_logs(message).as_bytes())
-                    .expect("Error in format warning log");
+                    .write(utils::format_trace(message).as_bytes())
+                    .expect("Error in format trace log");
             }
             &_ => {
                 self.stdout
-                    .write(utils::format_error("The type log is not specified").as_bytes())
+                    .write(utils::format_error("test").as_bytes())
                     .expect("Error in format info log");
             }
         }

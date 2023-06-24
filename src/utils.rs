@@ -17,6 +17,10 @@ pub fn format_warning(message: &str) -> String {
     format!("\x1b[93m[WARNING]\x1b[0m : {}\n", message)
 }
 
+pub fn format_trace(message: &str) -> String {
+    format!("\x1b[93m[TRACE]\x1b[0m : {}\n", message)
+}
+
 pub fn format_logs(message: &str) -> String {
-    format!("\x1b[93m[WARNING]\x1b[0m : {}\n", message)
+    format!("\x1b[93m[LOGS]\x1b[0m : {}\n", message)
 }
