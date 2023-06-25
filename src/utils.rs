@@ -21,3 +21,7 @@ pub fn format_trace(message: &str) -> String {
 pub fn format_status(message: &str) -> String {
     format!("\x1b[89m[STATUS]\x1b[0m : {}\n", message)
 }
+
+pub fn format_success(message: &str) -> String {
+    format!("\x1b[92m[SUCCESS]\x1b[0m : {}\n", message)
+}

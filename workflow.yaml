@@ -4,4 +4,4 @@
 
 - name: 2
   id: 2
-  run: echo Hello World2
+  run: ech Hello World2

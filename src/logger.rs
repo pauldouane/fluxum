@@ -52,6 +52,10 @@ impl Logger {
                 self.stdout
                     .write(utils::format_status(message).as_bytes()).unwrap()
             }
+            "success" => {
+                self.stdout
+                    .write(utils::format_success(message).as_bytes()).unwrap()
+            }
             &_ => {
                 self.stdout
                     .write(utils::format_error("test").as_bytes()).unwrap()

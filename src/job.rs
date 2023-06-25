@@ -2,7 +2,7 @@ use std::fmt::format;
 use crate::Logger;
 use std::sync::Arc;
 use tokio::process::Command;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, MutexGuard};
 
 #[derive(Debug)]
 pub enum Status {
@@ -25,7 +25,7 @@ impl Job {
         &mut self,
         logger: Arc<Mutex<Logger>>,
     ) -> Result<String, Box<dyn std::error::Error>> {
-        let mut logger = logger.lock().await;
+        let mut logger:MutexGuard<Logger> = logger.lock().await;
         let output = Command::new("sh")
             .arg("-c")
             .arg(String::from_utf8_lossy(&self.run).to_string())
@@ -37,8 +37,10 @@ impl Job {
 
         if output.status.success() {
             logger.log(&format!("Job output: {}", stdout), "trace");
+            self.set_succeed(logger).await;
         } else {
-            logger.log(&stderr, "error");
+            logger.log(&stderr, "trace");
+            self.set_failed(logger).await;
         }
 
         Ok(stdout)
@@ -57,23 +59,23 @@ impl Job {
 
     pub async fn set_succeed(
         &mut self,
-        logger: Arc<Mutex<Logger>>,
+        mut logger: MutexGuard<'_, Logger>,
     ) {
         self.status = Status::Succeed;
-        logger.lock().await.log(
+        logger.log(
             &format!("Job {} status has been updated: Succeed", String::from_utf8_lossy(&self.name)),
-            "status"
+            "success"
         );
     }
 
     pub async fn set_failed(
         &mut self,
-        logger: Arc<Mutex<Logger>>,
+        mut logger: MutexGuard<'_, Logger>,
     ) {
         self.status = Status::Failed;
-        logger.lock().await.log(
+        logger.log(
             &format!("Job {} status has been updated: Failed", String::from_utf8_lossy(&self.name)),
-            "status"
+            "error"
         );
     }
 }
