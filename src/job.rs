@@ -1,19 +1,14 @@
-use std::ffi::{OsStr, OsString};
-use std::os::unix::ffi::{OsStrExt, OsStringExt};
-use std::process::Output;
-use std::str::from_utf8;
+use std::fmt::format;
+use crate::Logger;
 use std::sync::Arc;
-use tokio::{
-    process::Command,
-    task::{self, JoinHandle},
-};
+use tokio::process::Command;
 use tokio::sync::Mutex;
-use crate::logger::Logger;
 
 #[derive(Debug)]
 pub enum Status {
     Running,
-    Queued,
+    Succeed,
+    Failed,
     NoStatus,
 }
 
@@ -26,7 +21,10 @@ pub struct Job {
 }
 
 impl Job {
-    pub async fn execute(&mut self, logger: Arc<Mutex<Logger>>) -> Result<String, Box<dyn std::error::Error>> {
+    pub async fn execute(
+        &mut self,
+        logger: Arc<Mutex<Logger>>,
+    ) -> Result<String, Box<dyn std::error::Error>> {
         let mut logger = logger.lock().await;
         let output = Command::new("sh")
             .arg("-c")
@@ -40,9 +38,42 @@ impl Job {
         if output.status.success() {
             logger.log(&format!("Job output: {}", stdout), "trace");
         } else {
-            eprintln!("Command execution failed. Error: {}", stderr);
+            logger.log(&stderr, "error");
         }
 
         Ok(stdout)
+    }
+
+    pub async fn set_running(
+        &mut self,
+        logger: Arc<Mutex<Logger>>,
+    ) {
+        self.status = Status::Running;
+        logger.lock().await.log(
+            &format!("Job {} status has been updated: Running", String::from_utf8_lossy(&self.name)),
+            "status"
+        );
+    }
+
+    pub async fn set_succeed(
+        &mut self,
+        logger: Arc<Mutex<Logger>>,
+    ) {
+        self.status = Status::Succeed;
+        logger.lock().await.log(
+            &format!("Job {} status has been updated: Succeed", String::from_utf8_lossy(&self.name)),
+            "status"
+        );
+    }
+
+    pub async fn set_failed(
+        &mut self,
+        logger: Arc<Mutex<Logger>>,
+    ) {
+        self.status = Status::Failed;
+        logger.lock().await.log(
+            &format!("Job {} status has been updated: Failed", String::from_utf8_lossy(&self.name)),
+            "status"
+        );
     }
 }

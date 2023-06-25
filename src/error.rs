@@ -1,51 +1,38 @@
 use core::fmt;
-use std::{error::Error, fmt::write};
-#[derive(Debug)]
-
-struct ParseConfigError {}
-struct ConfigMissingProperty {}
 
 #[derive(Debug)]
 pub enum ConfigError {
-    ParseConfigError(String),
-    ConfigMissingProperty(usize),
     FileNotFoundError(tokio::io::Error),
 }
 
+/*
 pub enum ConfigErrorKind {
-    ParseConfigError,
     ConfigMissingProperty,
     FileNotFoundError,
 }
+*/
 
+/*
 impl ConfigError {
     pub fn kind(&self) -> ConfigErrorKind {
         match self {
-            ConfigError::ConfigMissingProperty(_) => ConfigErrorKind::ConfigMissingProperty,
-            ConfigError::ParseConfigError(_) => ConfigErrorKind::ParseConfigError,
             ConfigError::FileNotFoundError(_) => ConfigErrorKind::FileNotFoundError,
         }
     }
 }
+*/
 
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ConfigError::ParseConfigError(message) => write!(f, "{}", message),
-            ConfigError::ConfigMissingProperty(number_job) => {
-                write!(
-                    f,
-                    "ConfigMissingProperty: a property is missing on the job number {}",
-                    number_job
-                )
-            }
             ConfigError::FileNotFoundError(err) => {
-                write!(f, "ConfigFileNotFoundError : {}\n", err)
+                writeln!(f, "ConfigFileNotFoundError : {}", err)
             }
         }
     }
 }
 
+/*
 #[derive(Debug)]
 pub struct LoggerError {
     details: String,
@@ -70,3 +57,4 @@ impl Error for LoggerError {
         &self.details
     }
 }
+*/

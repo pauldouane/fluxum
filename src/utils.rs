@@ -1,6 +1,3 @@
-use std::env;
-use std::path::PathBuf;
-
 // pub fn get_current_working_dir() -> std::io::Result<PathBuf> {
 //     env::current_dir()
 // }
@@ -18,9 +15,9 @@ pub fn format_warning(message: &str) -> String {
 }
 
 pub fn format_trace(message: &str) -> String {
-    format!("\x1b[93m[TRACE]\x1b[0m : {}\n", message)
+    format!("\x1b[93m[TRACE]\x1b[0m : {}", message)
 }
 
-pub fn format_logs(message: &str) -> String {
-    format!("\x1b[93m[LOGS]\x1b[0m : {}\n", message)
+pub fn format_status(message: &str) -> String {
+    format!("\x1b[89m[STATUS]\x1b[0m : {}\n", message)
 }
