@@ -1,7 +1,6 @@
-- name: 1
-  id: 1
-  run: echo Hello World
-
 - name: 2
   id: 2
-  run: ech Hello World2
+  run: ./test.sh
+- name: 3
+  id: 23
+  run: ./test.sh
