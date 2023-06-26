@@ -1,5 +1,5 @@
 use crate::error::ConfigError;
-use crate::job::Job;
+use crate::job::{Job, ShellJob, Status};
 use crate::logger::Logger;
 use std::sync::Arc;
 use tokio::fs::File;
@@ -14,18 +14,23 @@ fn clear_values(name: &mut Vec<u8>, id: &mut Vec<u8>, run: &mut Vec<u8>) {
 
 #[derive(Debug)]
 pub struct Config {
-    pub jobs: Vec<Job>,
+    pub jobs: Vec<Box<dyn Job>>,
 }
 
 impl Config {
-    pub async fn add(&mut self, name: Vec<u8>, id: Vec<u8>, run: Vec<u8>) -> bool {
-        let job: Job = Job {
+    pub async fn add(
+        &mut self,
+        name: Vec<u8>,
+        id: Vec<u8>,
+        run: Vec<u8>,
+        mut type_preset: Vec<u8>,
+    ) -> bool {
+        ShellJob {
             name,
             id,
             run,
-            status: crate::job::Status::NoStatus,
+            status: Status::NoStatus,
         };
-        self.jobs.push(job);
         true
     }
 
@@ -52,17 +57,16 @@ impl Config {
         // Index of property
         let mut index: usize = 0;
         // Store bytes in the appropriate property
-        let (mut name, mut id, mut run): (Vec<u8>, Vec<u8>, Vec<u8>) = (vec![], vec![], vec![]);
+        let (mut name, mut id, mut run, mut type_preset): (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) =
+            (vec![], vec![], vec![], vec![]);
         // Control iterator loop
         let mut i = 0;
         while i < buffer.len() {
             // New job
             if buffer[i] == 0x2D && buffer[i + 1] == 0x20 {
-                // if name.is_empty() || id.is_empty() || run.is_empty() {
-                //     return Err(ConfigError::ConfigMissingProperty(self.jobs.len() - 1));
-                // }
                 if i != 0 {
-                    self.add(name.clone(), id.clone(), run.clone()).await;
+                    self.add(name.clone(), id.clone(), run.clone(), type_preset.clone())
+                        .await;
                     clear_values(&mut name, &mut id, &mut run);
                 }
                 i += 2;
@@ -95,18 +99,29 @@ impl Config {
                 i += 5;
                 continue;
             }
+            // Type property
+            if buffer[i] == 0x74
+                && buffer[i + 1] == 0x79
+                && buffer[i + 2] == 0x70
+                && buffer[i + 3] == 0x65
+            {
+                i += 5;
+                continue;
+            }
             // If bytes is not \n
             if buffer[i] != 0xA && buffer[i] != 13 {
                 match index {
                     0 => name.push(buffer[i]),
                     1 => id.push(buffer[i]),
                     2 => run.push(buffer[i]),
+                    3 => type_preset.push(buffer[i]),
                     _ => {}
                 }
             }
             // Push last job
             if i == (buffer.len() - 1) {
-                self.add(name.clone(), id.clone(), run.clone()).await;
+                self.add(name.clone(), id.clone(), run.clone(), type_preset.clone())
+                    .await;
             }
             i += 1;
         }

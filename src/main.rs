@@ -14,7 +14,7 @@ mod utils;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let logger_mutex: Arc<Mutex<Logger>> = Arc::new(Mutex::new(Logger::new())); // Create an Arc<Mutex<Logger>> for sharing the logger
+    let logger_mutex: Arc<Mutex<Logger>> = Arc::new(Mutex::new(Logger::new()));
     let mut config = Config { jobs: vec![] };
     let logger: Arc<Mutex<Logger>> = Arc::clone(&logger_mutex);
     config
@@ -26,7 +26,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
         job.set_running(logger).await;
         let logger_spawn: Arc<Mutex<Logger>> = Arc::clone(&logger_mutex);
         let handle = tokio::spawn(async move {
-            job.execute(logger_spawn).await.expect("TODO: panic message");
+            job.execute(logger_spawn)
+                .await
+                .expect("Unable to execute job");
         });
         let _ = handle.await;
     }

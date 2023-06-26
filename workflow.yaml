@@ -1,6 +1,7 @@
-- name: 2
-  id: 2
+- name: exemple-sh
+  id: exemple-sh
   run: ./test.sh
-- name: 3
-  id: 23
-  run: ./test.sh
+- name: exemple-py
+  id: exemple-py
+  type: python-script
+  run: ./test.py
