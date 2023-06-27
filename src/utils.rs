@@ -25,3 +25,11 @@ pub fn format_status(message: &str) -> String {
 pub fn format_success(message: &str) -> String {
     format!("\x1b[92m[SUCCESS]\x1b[0m : {}\n", message)
 }
+
+pub fn format_stdout(message: &str) -> String {
+    format!("\x1b[93m[STDOUT]\x1b[0m : {}\n", message)
+}
+
+pub fn format_stderr(message: &str) -> String {
+    format!("\x1b[91m[STDERR]\x1b[0m : {}\n", message)
+}

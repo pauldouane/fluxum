@@ -1,31 +1,51 @@
 use crate::error::ConfigError;
-use crate::job::Job;
+use crate::job::{Job, Operator, Status};
 use crate::logger::Logger;
 use std::sync::Arc;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::sync::{Mutex, MutexGuard};
 
-fn clear_values(name: &mut Vec<u8>, id: &mut Vec<u8>, run: &mut Vec<u8>) {
+fn clear_values(
+    name: &mut Vec<u8>,
+    id: &mut Vec<u8>,
+    run: &mut Vec<u8>,
+    type_preset: &mut Vec<u8>,
+) {
     name.clear();
     id.clear();
     run.clear();
+    type_preset.clear();
 }
 
-#[derive(Debug)]
 pub struct Config {
     pub jobs: Vec<Job>,
 }
 
 impl Config {
-    pub async fn add(&mut self, name: Vec<u8>, id: Vec<u8>, run: Vec<u8>) -> bool {
-        let job: Job = Job {
+    pub async fn add(
+        &mut self,
+        name: Vec<u8>,
+        id: Vec<u8>,
+        run: Vec<u8>,
+        type_preset: Vec<u8>,
+    ) -> bool {
+        let type_preset = match std::str::from_utf8(&type_preset) {
+            Ok(v) => v,
+            Err(e) => panic!("Invalid UTF-8 type sequence: {}", e),
+        };
+        let mut operator: Operator = match type_preset {
+            "shell" => Operator::ShellOperator,
+            "python" => Operator::PythonOperator,
+            &_ => panic!("Invalid type sequence"),
+        };
+        self.jobs.push(Job {
             name,
             id,
             run,
-            status: crate::job::Status::NoStatus,
-        };
-        self.jobs.push(job);
+            status: Status::NoStatus,
+            operator,
+        });
         true
     }
 
@@ -52,18 +72,17 @@ impl Config {
         // Index of property
         let mut index: usize = 0;
         // Store bytes in the appropriate property
-        let (mut name, mut id, mut run): (Vec<u8>, Vec<u8>, Vec<u8>) = (vec![], vec![], vec![]);
+        let (mut name, mut id, mut run, mut type_preset): (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) =
+            (vec![], vec![], vec![], vec![]);
         // Control iterator loop
         let mut i = 0;
         while i < buffer.len() {
             // New job
             if buffer[i] == 0x2D && buffer[i + 1] == 0x20 {
-                // if name.is_empty() || id.is_empty() || run.is_empty() {
-                //     return Err(ConfigError::ConfigMissingProperty(self.jobs.len() - 1));
-                // }
                 if i != 0 {
-                    self.add(name.clone(), id.clone(), run.clone()).await;
-                    clear_values(&mut name, &mut id, &mut run);
+                    self.add(name.clone(), id.clone(), run.clone(), type_preset.clone())
+                        .await;
+                    clear_values(&mut name, &mut id, &mut run, &mut type_preset);
                 }
                 i += 2;
                 index = 0;
@@ -85,6 +104,17 @@ impl Config {
                 i += 6;
                 continue;
             }
+            // Type  property
+            if (i + 3) < buffer.len() {
+                if buffer[i] == 0x74
+                    && buffer[i + 1] == 0x79
+                    && buffer[i + 2] == 0x70
+                    && buffer[i + 3] == 0x65
+                {
+                    i += 6;
+                    continue;
+                }
+            }
             // Id property
             if buffer[i] == 0x69 && buffer[i + 1] == 0x64 {
                 i += 4;
@@ -100,13 +130,15 @@ impl Config {
                 match index {
                     0 => name.push(buffer[i]),
                     1 => id.push(buffer[i]),
-                    2 => run.push(buffer[i]),
+                    2 => type_preset.push(buffer[i]),
+                    3 => run.push(buffer[i]),
                     _ => {}
                 }
             }
             // Push last job
             if i == (buffer.len() - 1) {
-                self.add(name.clone(), id.clone(), run.clone()).await;
+                self.add(name.clone(), id.clone(), run.clone(), type_preset.clone())
+                    .await;
             }
             i += 1;
         }

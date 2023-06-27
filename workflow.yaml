@@ -1,6 +1,12 @@
-- name: 2
-  id: 2
+- name: exemple-sh
+  id: exemple-sh
+  type: shell
   run: ./test.sh
-- name: 3
-  id: 23
-  run: ./test.sh
+- name: exemple-sh-2
+  id: exemple-sh-2
+  type: shell
+  run: ./test2.sh
+- name: echo-aubert
+  id: echo-aubert
+  type: python
+  run: ./test.py
