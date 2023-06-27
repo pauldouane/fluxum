@@ -1,9 +1,9 @@
-- name: exemple-sh
-  id: exemple-sh
+- name: example-sh
+  id: example-sh
   type: shell
   run: ./test.sh
-- name: exemple-sh-2
-  id: exemple-sh-2
+- name: example-sh-2
+  id: example-sh-2
   type: shell
   run: ./test2.sh
 - name: echo-aubert

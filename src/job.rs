@@ -1,6 +1,7 @@
 use crate::{logger, Logger};
 use async_trait::async_trait;
 use std::fmt::{self, format};
+use std::fs::canonicalize;
 use std::process::Stdio;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, BufReader, Lines};
@@ -24,13 +25,14 @@ pub struct Job {
 }
 
 impl Job {
-    pub async fn execute_operator(&mut self, logger: Arc<Mutex<Logger>>) {
+    pub async fn execute_operator(&mut self, logger: Arc<Mutex<Logger>>) -> Result<(), Box<dyn std::error::Error>> {
         let mut logger: MutexGuard<Logger> = logger.lock().await;
         let mut run = String::from_utf8_lossy(&self.run).to_string();
         let mut child: Child = match self.operator.execute(run).await {
             Ok(child) => child,
             Err(err) => panic!("{}", err),
         };
+
         let stdout: ChildStdout = child.stdout.take().expect("Failed to capture stdout");
         let stderr: ChildStderr = child.stderr.take().expect("Failed to capture stderr");
 
@@ -62,11 +64,10 @@ impl Job {
         if status.success() {
             self.set_succeed(logger).await;
         } else {
-            println!(
-                "Command failed with exit code: {}",
-                status.code().unwrap_or(-1)
-            );
+            self.set_failed(logger).await;
         }
+
+        Ok(())
     }
 
     pub async fn set_running(&mut self, logger: Arc<Mutex<Logger>>) {
@@ -124,17 +125,14 @@ impl Operator {
                 Ok(child)
             }
             Self::PythonOperator => {
-                println!("{}", run);
-                let mut child = Command::new("sh")
-                    .arg("-c")
+                let mut child = Command::new("python3")
+                    .arg("-u")
                     .arg(run)
                     .stdout(Stdio::piped())
                     .stderr(Stdio::piped())
                     .spawn()?;
                 Ok(child)
             }
-            Operator::ShellOperator => todo!(),
-            Operator::PythonOperator => todo!(),
             Operator::DockerOperator => todo!(),
             Operator::GoOperator => todo!(),
         }
