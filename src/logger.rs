@@ -66,7 +66,7 @@ impl Logger {
                 .unwrap(),
             &_ => self
                 .stdout
-                .write(utils::format_error("test").as_bytes())
+                .write(utils::format_error(message).as_bytes())
                 .unwrap(),
         }
     }

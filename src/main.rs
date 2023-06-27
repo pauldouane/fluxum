@@ -26,9 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
         job.set_running(logger).await;
         let logger_spawn: Arc<Mutex<Logger>> = Arc::clone(&logger_mutex);
         let handle = tokio::spawn(async move {
-            job.execute(logger_spawn)
-                .await
-                .expect("Unable to execute job");
+            job.execute_operator(logger_spawn).await;
         });
         let _ = handle.await;
     }
