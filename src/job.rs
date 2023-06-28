@@ -1,10 +1,7 @@
-use crate::{logger, Logger};
-use async_trait::async_trait;
-use std::fmt::{self, format};
-use std::fs::canonicalize;
+use crate::Logger;
 use std::process::Stdio;
 use std::sync::Arc;
-use tokio::io::{AsyncBufReadExt, BufReader, Lines};
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, ChildStderr, ChildStdout, Command};
 use tokio::sync::{Mutex, MutexGuard};
 
@@ -25,9 +22,12 @@ pub struct Job {
 }
 
 impl Job {
-    pub async fn execute_operator(&mut self, logger: Arc<Mutex<Logger>>) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn execute_operator(
+        &mut self,
+        logger: Arc<Mutex<Logger>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut logger: MutexGuard<Logger> = logger.lock().await;
-        let mut run = String::from_utf8_lossy(&self.run).to_string();
+        let run = String::from_utf8_lossy(&self.run).to_string();
         let mut child: Child = match self.operator.execute(run).await {
             Ok(child) => child,
             Err(err) => panic!("{}", err),
@@ -45,7 +45,7 @@ impl Job {
                 Ok(line) => line,
                 Err(_err) => String::from(""),
             };
-            logger.log(&format!("{}", line), "stdout");
+            logger.log(&line.to_string(), "stdout");
         }
 
         let mut stderr_lines_iter = stderr_reader.lines();
@@ -54,7 +54,7 @@ impl Job {
                 Ok(line) => line,
                 Err(_err) => String::from(""),
             };
-            logger.log(&format!("{}", line), "sttderr");
+            logger.log(&line.to_string(), "sttderr");
         }
 
         let status = match child.wait().await {
@@ -106,17 +106,17 @@ impl Job {
 
 #[derive(Debug)]
 pub enum Operator {
-    ShellOperator,
-    PythonOperator,
-    DockerOperator,
-    GoOperator,
+    Shell,
+    Python,
+    Docker,
+    Go,
 }
 
 impl Operator {
     pub async fn execute(&mut self, run: String) -> Result<Child, Box<dyn std::error::Error>> {
         match self {
-            Self::ShellOperator => {
-                let mut child = Command::new("sh")
+            Self::Shell => {
+                let child = Command::new("sh")
                     .arg("-c")
                     .arg(run)
                     .stdout(Stdio::piped())
@@ -124,8 +124,8 @@ impl Operator {
                     .spawn()?;
                 Ok(child)
             }
-            Self::PythonOperator => {
-                let mut child = Command::new("python3")
+            Self::Python => {
+                let child = Command::new("python3")
                     .arg("-u")
                     .arg(run)
                     .stdout(Stdio::piped())
@@ -133,8 +133,27 @@ impl Operator {
                     .spawn()?;
                 Ok(child)
             }
-            Operator::DockerOperator => todo!(),
-            Operator::GoOperator => todo!(),
+            Operator::Docker => {
+                let child = Command::new("docker")
+                    .arg("build")
+                    .arg("--progress=plain")
+                    .arg("--log")
+                    .arg(run)
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()?;
+                Ok(child)
+            }
+            Operator::Go => {
+                let child = Command::new("go")
+                    .arg("build")
+                    .arg("-x")
+                    .arg(run)
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()?;
+                Ok(child)
+            }
         }
     }
 }

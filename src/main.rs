@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use job::Status;
 use tokio::sync::Mutex;
 
 use crate::config::Config;
@@ -30,6 +29,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
         });
         let _ = handle.await;
     }
-
     Ok(())
 }

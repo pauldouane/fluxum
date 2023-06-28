@@ -34,9 +34,11 @@ impl Config {
             Ok(v) => v,
             Err(e) => panic!("Invalid UTF-8 type sequence: {}", e),
         };
-        let mut operator: Operator = match type_preset {
-            "shell" => Operator::ShellOperator,
-            "python" => Operator::PythonOperator,
+        let operator: Operator = match type_preset {
+            "shell" => Operator::Shell,
+            "python" => Operator::Python,
+            "docker" => Operator::Docker,
+            "go-build" => Operator::Go,
             &_ => panic!("Invalid type sequence"),
         };
         self.jobs.push(Job {
@@ -105,15 +107,14 @@ impl Config {
                 continue;
             }
             // Type  property
-            if (i + 3) < buffer.len() {
-                if buffer[i] == 0x74
-                    && buffer[i + 1] == 0x79
-                    && buffer[i + 2] == 0x70
-                    && buffer[i + 3] == 0x65
-                {
-                    i += 6;
-                    continue;
-                }
+            if (i + 3) < buffer.len()
+                && buffer[i] == 0x74
+                && buffer[i + 1] == 0x79
+                && buffer[i + 2] == 0x70
+                && buffer[i + 3] == 0x65
+            {
+                i += 6;
+                continue;
             }
             // Id property
             if buffer[i] == 0x69 && buffer[i + 1] == 0x64 {

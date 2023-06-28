@@ -5,8 +5,16 @@
 - name: example-sh-2
   id: example-sh-2
   type: shell
-  run: ./test2.sh
+  run: echo Hello Aubert >> test.txt
 - name: echo-aubert
   id: echo-aubert
   type: python
   run: ./test.py
+- name: docker
+  id: docker
+  type: docker
+  run: .
+- name: go-build
+  id: go-build
+  type: go-build
+  run: helloWorld.go
